@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Web Scraping for Sports Data with R</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Lucas da Cunha Godoy" />
+    <link rel="stylesheet" href="xaringan-themer.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Web Scraping for Sports Data with R
+## UCSAS 2021
+### Lucas da Cunha Godoy
+### October 2021
+
+---
+
+
+
+
+
+
+
+
+
+## Outline
+
+* Intro
+* Basic notions about `HTML`
+* The `rvest` package
+* Examples and Exercises
+
+---
+
+class: center, middle, inverse
+
+# Introduction
+
+---
+
+## Introduction
+
+--
+
+* Web scraping technique is used for capturing data from websites.
+
+--
+
+* It is extremely useful for extracting unstructured data (e.g. text data)
+  and/or data available **only** through web pages.
+
+--
+
+* A reproducible way of capturing data online
+  
+--
+  
+&gt; Web scraping scripts need to be updated periodically, it is common for these
+&gt; scripts to become deprecated due to unexpected changes on the websites where
+&gt; they are contained.
+
+---
+
+## Introduction
+
+* The two most popular `R` packages for web scraping are the
+  [`rvest`](https://rvest.tidyverse.org/) and the
+  [`RSelenium`](https://docs.ropensci.org/RSelenium/).
+  
+--
+
+* The latter is more flexible and, consequently, more complicated to deal
+  with. It requires us to set up a local server, and the process to do so
+  depends on your OS. One option to make it work independently of the OS is to
+  us [Docker](https://docs.ropensci.org/RSelenium/). This topic is not in the
+  scope of this course.
+  
+--
+  
+* Here we will focus on `rvest` which follows the "tidyverse" structure and
+  style.
+
+---
+
+## Prerequisites
+
+* Having experience with `R`
+
+* A laptop with `R` and Rstudio installed
+ 
+* `rvest`, `dplyr`, and `ggplot2` packages will be needed. To install the
+  packages run  
+  
+
+```r
+install.packages(c("rvest", "dplyr", "ggplot2"),
+                 repos = "https://cloud.r-project.org/")
+```
+
+---
+
+class: middle, center, inverse
+
+# Basic notions about `HTML`
+
+---
+
+## What is `HTML`?
+
+
+* `HTML` stands for *Hipertext Markup Language*
+
+--
+
+* It's a language used to "build" (or represent) websites.
+
+--
+
+* When we open a website using a web browser it translates the `HTML` code into
+  a visual representation.
+
+--
+
+* There are many technologies used jointly with `HTML` to make websites look
+  nicer and, sometimes, safer. Some examples are `javascript` and `CSS`.
+
+---
+
+## How does a `.html` file looks like?
+
+```
+&lt;!DOCTYPE html&gt;
+
+&lt;html&gt;
+  &lt;head&gt;
+    &lt;title&gt;Hello World!&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;b&gt;Hello World!&lt;/b&gt;
+  &lt;/body&gt;
+&lt;/html&gt;
+```
+
+&gt; Example from https://jakobtures.github.io/web-scraping/html.html .
+
+--
+
+&lt;!-- * There are many elements in `html`. We do not have time to cover all of --&gt;
+&lt;!--   them. Let's focus on some important tags that might be useful to extract data. --&gt;
+
+---
+
+## Tags, ids, classes, attributes
+  
+* **html** 
+    - The whole content of a website is usually part of this tag.
+* **head** 
+    - Contains metadata abou the page/document. For instance, its title and
+      helper scripts in other languages, such as `js` and `css`.
+* **title** 
+    - Title of the page.
+* **body** 
+    - Primary visual content. Everything not within the header is usually
+      included under this tag.
+* **h1, h2, h3, h4** 
+    - Different levels of headers within the document. 
+* **p** 
+    - a paragraph.
+* **ul, ol, li** 
+    - unerdered, and ordered lists and their elements.
+
+---
+
+## Tags, ids, classes, attributes
+
+Each one of the previously displayed tags might have their own "ids", "classes",
+and "attributes". The ids and classes will be responsible to customize different
+tags. For example, the web developer might want to define a different style for
+some paragraphs. This can be done using id's and/or classes.
+
+---
+
+## Static and Dynamic Data
+
+* Most of data in the web are not organized into files, which can be directly
+  imported into R.
+
+* Before we capture these data, we need to determine whether the data are static
+  or dynamic based on the source code.
+
+* Static data is the data that can be seen in the source code.
+
+* We cannot see the dynamic data in the source code.
+
+---
+
+## Static Data and Dynamic Data
+
+* The source code can be accessed by View `\(\rightarrow\)` Developer `\(\rightarrow\)`
+  View Source in Chrome. Or right click the website and choose "View Page
+  Source".
+
+![](img/web_dev.png)
+
+---
+
+## Static Data and Dynamic Data
+
+Exercise: Determine what kind of the data are in the following examples, static
+or dynamic.
+
+* http://tennisabstract.com/reports/atp_elo_ratings.html
+
+* https://www.flashscore.com/team/connecticut-huskies/8rqVf3Tj/results/
+
+
+---
+
+## Static Data and Dynamic Data
+
+![](img/tennis.png)
+
+This is static data.
+
+---
+
+## Static Data and Dynamic Data
+
+![](img/uconnbasketball.png)
+
+This is dynamic data.
+
+---
+
+class: middle, center, inverse
+
+# The `rvest` package
+
+---
+
+## Example
+
+[College basketball school index](https://www.sports-reference.com/cbb/schools/)
+
+* These data can be obtained by copying and pasting manully.
+
+* Web scraping technique helps capture the data efficiently.
+
+![](img/basketball.png)
+
+## Web Scraping Using R
+
+* Different web scraping techniques are required when we are facing different kinds of data.
+
+* Data have been organized into files.
+
+  - Directly download it and read it in R
+
+* Data are contained in HTML pages.
+
+  - Static data
+  - Dynamic data
+
+## Import Data Files from Websites
+
+* These files that can be read by **read.csv** or related functions.
+
+* They can be directly imported from a URL.
+
+- Example: we extract the most recent Australian Open Tennis Championships match [(AUS Open)](http://www.tennis-data.co.uk/ausopen.php):
+
+
+```r
+url &lt;- "http://www.tennis-data.co.uk/2020/ausopen.csv"
+tennis_aus &lt;- read.csv(url)
+str(tennis_aus)
+```
+
+---
+
+
+---
+
+## Web Scraping for Static Data in R
+
+R provides several approaches for web scraping the static data. Two of them will be discussed in this workshop.
+
+* **readLines** function: Read the source code of the HTML pages.
+
+* **rvest** package: Capture useful data by identifying the elements contains the data in the source code. 
+
+---
+
+## Web Scraping for Static Data in R
+
+Use **readLines** function for [College basketball school index](https://www.sports-reference.com/cbb/schools/). 
+
+
+```r
+web_page &lt;- readLines("https://www.sports-reference.com/cbb/schools/")
+head(web_page, n = 10L)
+```
+
+* Gives the source code.
+
+* Needs data cleaning and organization.
+
+---
+
+
+## Web Scraping for Static Data in R
+
+Before we talk about web scraping by **rvest** package, we need to know how to locate the elements containing the data in the source code.
+
+* Right click the page and choose "Inspect".
+
+* Click "Select an element in the page to inspect it".
+
+* We can locate the elements by CSS selector or XPATH.
+
+---
+
+## Web Scraping for Static Data in R
+
+Use http://tennisabstract.com/reports/atp_elo_ratings.html as an example
+
+* CSS selector: id = "reportable", class = "tablesorter"
+
+![](img/css.png)
+
+---
+
+## Web Scraping for Static Data in R
+
+* XPATH: '//*[@id="reportable"]'
+
+![](img/xpath.png)
+
+---
+
+## Web Scraping for Static Data in R
+
+Next, we are going to talk about how to use **rvest** for web scraping by using an example.
+
+
+* Install **rvest** package from cran.
+
+\footnotesize
+
+```r
+install.packages("rvest", repos = "http://cran.us.r-project.org")
+require("rvest")
+```
+
+---
+
+## Web Scraping for Static Data in R
+
+* Web scraping data from http://tennisabstract.com/reports/atp_elo_ratings.html
+
+
+
+```r
+url_elo &lt;- "http://tennisabstract.com/reports/atp_elo_ratings.html"
+webpage &lt;- read_html(url_elo)
+elo_class &lt;- webpage %&gt;% 
+  html_nodes(".tablesorter") %&gt;% 
+  html_table()
+elo_id &lt;- webpage %&gt;% 
+  html_nodes("#reportable") %&gt;% 
+  html_table()
+identical(elo_class, elo_id)
+```
+
+---
+
+## Web Scraping for Static Data in R
+
+
+
+```r
+elo_xpath &lt;- webpage %&gt;% 
+  html_nodes(xpath = '//*[@id="reportable"]') %&gt;% 
+  html_table()
+identical(elo_class, elo_xpath)
+head(elo_class[[1]])
+```
+
+---
+
+## Web Scraping for Static Data in R
+
+* Except **html_nodes** and **html_table**, there are many other frequently used functions in **rvest**.
+
+  - **html_node** : extract element
+  - **html_text** : extract text
+  - **html_attrs** : extract attributes
+  - **html_form** : extract forms
+
+* Please look up [rvest cran](https://cran.r-project.org/web/packages/rvest/rvest.pdf) for more information.
+
+* [SelectorGadget](https://cran.r-project.org/web/packages/rvest/vignettes/selectorgadget.html) is a convenient tool to identify CSS selector.
+
+---
+
+## Web Scraping for Dynamic Data in R
+
+* What dynamic data display in the website can be changed in response to the user interaction. 
+
+* We need to automate the web browsing process in R for the dynamic data.
+
+* **RSelenium** package helps this automating process by providing connection to Selenium Server.
+
+* Install **RSelenium** package.
+
+\footnotesize
+
+```r
+devtools::install_github("ropensci/RSelenium")
+require("RSelenium")
+```
+
+\normalsize
+
+---
+
+## Web Scraping for Dynamic Data in R
+
+* Use **RSelenium** to extract data on [2017 Australian Open Final](http://www.flashscore.com/match/Cj6I5iL9/#match-statistics;0)
+
+![](img/flashscore.png)
+
+---
+
+## Web Scraping for Dynamic Data in R
+
+* Connect to a selenium server and open brower.
+
+
+```r
+rD &lt;- rsDriver(port = 5561L, chromever = "85.0.4183.87")
+remDr &lt;- rD$client
+```
+
+* Extract Information and organize data.
+
+
+```r
+url &lt;- "http://www.flashscore.com/match/Cj6I5iL9/#match-statistics;0"
+remDr$navigate(url)
+webElem &lt;- remDr$findElements(using = 'class', "statBox")
+webElem &lt;- unlist(lapply(webElem, function(x){x$getElementText()}))[[1]]
+# head(unlist(strsplit(webElem, split = '\n')))
+remDr$close()
+```
+![](img/rselres.png)
+\normalsize
+
+---
+
+## Web Scraping for Dynamic Data in R
+
+* Frequently used functions of **RSelenium**:
+
+  - rsDriver() : start a selenium server
+  - navigate() : navigate web pages
+  - findElements() : find elements by CSS seclector or XPATH
+  - getPageSource() : get current page source
+  - clickElement() : click element
+  
+* Please go to [RSelenium cran](https://cran.r-project.org/web/packages/RSelenium/RSelenium.pdf) for more details.
+
+---
+
+## Web Scraping for Dynamic Data in R
+
+Exercise: Web Scraping for the history basketball recording of UConn
+
+https://www.flashscore.com/team/connecticut-huskies/8rqVf3Tj/results/
+
+* Start a selenium server and open web brower.
+
+
+```r
+require("RSelenium")
+rD &lt;- rsDriver(port = 5533L, chromever = "85.0.4183.87")
+remDr &lt;- rD$client
+url &lt;- "https://www.flashscore.com/team/connecticut-huskies/8rqVf3Tj/results/#"
+remDr$navigate(url)
+```
+\normalsize
+
+---
+
+## Web Scraping for Dynamic Data in R
+
+* Automate to click all "show more results".
+
+
+```r
+repeat{
+  b &lt;- tryCatch({
+    suppressMessages({
+      webElemMore &lt;- remDr$findElement(using = 'xpath', 
+                        '//*[@id="live-table"]/div[1]/div/div/a')
+      webElemMore$clickElement()
+    })
+  }, error = function(e) e)
+  if(inherits(b, "error")) break
+}
+```
+
+* Extract data, such as time, home/away, score and result.
+
+
+```r
+webElemTime &lt;- remDr$findElements(using = 'xpath', 
+                              '//*[@class="event__time"]')
+webElemTime &lt;- 
+  unlist(lapply(webElemTime, function(x){x$getElementText()}))
+webElemTime &lt;- gsub("\\n", " ", webElemTime)
+```
+
+---
+
+## Web Scraping for Dynamic Data in R
+
+
+```r
+webElemHome &lt;- 
+  remDr$findElements(using = 'class', 
+                     'event__participant')
+webElemHome &lt;- 
+  unlist(lapply(webElemHome, function(x){x$getElementText()}))
+webElemScore &lt;- 
+  remDr$findElements(using = 'class', 'event__score')
+webElemScore &lt;- 
+  unlist(lapply(webElemScore, function(x){x$getElementText()}))
+webElemResult &lt;- 
+  remDr$findElements(using = 'class', 'wld')
+webElemResult &lt;- 
+  unlist(lapply(webElemResult, function(x){x$getElementText()}))
+```
+
+---
+
+## Web Scraping for Dynamic Data in R
+
+* Organize dataset.
+
+
+```r
+n &lt;- length(webElemHome)
+basketball &lt;- 
+  data.frame(time = webElemTime,
+             Home = webElemHome[seq(n) %% 2 == 1],
+             Away = webElemHome[seq(n) %% 2 == 0],
+             HomeS = webElemScore[seq(n) %% 2 == 1],
+             AwayS = webElemScore[seq(n) %% 2 == 0],
+             Result = webElemResult)
+head(basketball)
+remDr$close()
+```
+
+![](img/uconn.png)
+
+---
+
+## Summary
+
+* For different kinds of data, we need to use different web scraping techiniques with R.
+
+* One can simply use **read.csv** or related functions to directly import organized files from web pages.
+
+* The static data can be extract with the help of **rvest**.
+
+* We could use **RSelenium** to parse the dynamic data.
+
+---
+
+## Resources
+
+- [CSS and HTML crash course](http://flukeout.github.io/)
+
+- [rvest](https://rvest.tidyverse.org/)
+
+- [RSelenium](https://cran.r-project.org/web/packages/RSelenium/vignettes/basics.html)
+
+- [R task view: web technology](https://cran.r-project.org/web/views/WebTechnologies.html)
+
+
+---
+
+## Acknowledgement
+
+This slides are modified from [Dr. Kovalchik's
+material](https://github.com/skoval/UseRSportTutorial), [Wanwan Xu's
+slides](https://github.com/wanwanx/WebScraping_UCSAS), [Yaqiong Yao's
+slides](https://github.com/yay17007/UCSAS_WebScrapping).
+
+---
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"ratio": "16:9",
+"highlightStyle": "monokai-sublime",
+"highlightLines": true,
+"countIncrementalSlides": false,
+"seal": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>

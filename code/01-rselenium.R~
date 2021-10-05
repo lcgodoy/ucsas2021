@@ -1,0 +1,14 @@
+library(RSelenium)
+
+remDr <- remoteDriver(port = 4445L)
+
+remDr$open()
+
+
+url <- "http://www.flashscore.com/match/Cj6I5iL9/#match-statistics;0"
+remDr$navigate(url)
+
+webElem <- remDr$findElements(using = 'class', "statBox")
+webElem <- unlist(lapply(webElem, function(x){x$getElementText()}))[[1]]
+
+remDr$close()
