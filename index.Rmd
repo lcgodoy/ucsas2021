@@ -52,7 +52,7 @@ library(ggplot2)
 ## Outline
 
 * Intro
-* Basic notions about `HTML`
+* Basic notions about `HTML` and web scraping
 * The `rvest` package
 * Examples and Exercises
 
@@ -114,11 +114,11 @@ class: center, middle, inverse
 
 * A laptop with `R` and Rstudio installed
  
-* `rvest`, `dplyr`, and `ggplot2` packages will be needed. To install the
+* `rvest`, `dplyr`, `janitor`, and `ggplot2` packages will be needed. To install the
   packages run  
   
 ```{r install_pkgs, echo = TRUE, eval = FALSE}
-install.packages(c("rvest", "dplyr", "ggplot2"),
+install.packages(c("rvest", "dplyr", "ggplot2", "janitor"),
                  repos = "https://cloud.r-project.org/")
 ```
 
@@ -126,7 +126,7 @@ install.packages(c("rvest", "dplyr", "ggplot2"),
 
 class: middle, center, inverse
 
-# Basic notions about `HTML`
+# Basic notions about `HTML` and web scraping
 
 ---
 
@@ -153,6 +153,9 @@ class: middle, center, inverse
 
 ## How does a `.html` file looks like?
 
+The visual representation of the `html` code below can be seen in
+[here](https://webscraping-tures.github.io/hello_world.html).
+
 ```
 <!DOCTYPE html>
 
@@ -167,8 +170,6 @@ class: middle, center, inverse
 ```
 
 > Example from https://jakobtures.github.io/web-scraping/html.html .
-
---
 
 <!-- * There are many elements in `html`. We do not have time to cover all of -->
 <!--   them. Let's focus on some important tags that might be useful to extract data. -->
@@ -192,16 +193,23 @@ class: middle, center, inverse
 * **p** 
     - a paragraph.
 * **ul, ol, li** 
-    - unerdered, and ordered lists and their elements.
+    - unordered, and ordered lists and their elements.
+* **table, th, tr, td** 
+    - Table, table header, table row, and table content, respectively.
 
 ---
 
 ## Tags, ids, classes, attributes
 
-Each one of the previously displayed tags might have their own "ids", "classes",
-and "attributes". The ids and classes will be responsible to customize different
-tags. For example, the web developer might want to define a different style for
-some paragraphs. This can be done using id's and/or classes.
+- Each one of the previously displayed tags might have their own "ids",
+  "classes", and "attributes". The ids and classes will be responsible to
+  customize different tags.
+
+- For example, the web developer might want to define a different style for some
+  specific paragraphs and/or tables. This can be achieved by assigning different
+  classes for these tags.
+  
+- Usually, `css` is used to define these styling options.
 
 ---
 
@@ -213,69 +221,46 @@ some paragraphs. This can be done using id's and/or classes.
 * Before we capture these data, we need to determine whether the data are static
   or dynamic based on the source code.
 
-* Static data is the data that can be seen in the source code.
-
-* We cannot see the dynamic data in the source code.
-
----
-
-## Static Data and Dynamic Data
-
-* The source code can be accessed by View $\rightarrow$ Developer $\rightarrow$
-  View Source in Chrome. Or right click the website and choose "View Page
-  Source".
-
-![](img/web_dev.png)
+* Unfortunately, there is no general rule to determine wheter the data provided
+  by a website is static or dynamic and it needs to be done in a case by case
+  basis.
 
 ---
 
-## Static Data and Dynamic Data
+## Differences between static and dynamic data
 
-Exercise: Determine what kind of the data are in the following examples, static
-or dynamic.
+* As the name suggests, static data is static. That is, once the website is
+  loaded, all the data is available (even though it might be hidden by some
+  button).
+  
+* Sometimes it is possible to determine wheter the data is static by looking at
+  the source code of the webpage. 
 
-* http://tennisabstract.com/reports/atp_elo_ratings.html
+* Note that, even if we don't find the data itself in the source code, it might
+  be static.
 
-* https://www.flashscore.com/team/connecticut-huskies/8rqVf3Tj/results/
-
-
----
-
-## Static Data and Dynamic Data
-
-![](img/tennis.png)
-
-This is static data.
+* Most of modern websites rely on servers to store, retrieve, and or manipulate
+  the data. Dynamic data is not available until you "request" it by clicking at
+  some button or making a search.
 
 ---
 
-## Static Data and Dynamic Data
 
-![](img/uconnbasketball.png)
+* Note that, the source code can be accessed by View $\rightarrow$ Developer
+  $\rightarrow$ View Source in Chrome. Or right click the website and choose
+  "View Page Source".
 
-This is dynamic data.
 
----
-
-class: middle, center, inverse
-
-# The `rvest` package
+```{r img_1, out.width = "85%", fig.align = "center"}
+knitr::include_graphics("img/web_dev.png")
+```
 
 ---
-
-## Example
-
-[College basketball school index](https://www.sports-reference.com/cbb/schools/)
-
-* These data can be obtained by copying and pasting manully.
-
-* Web scraping technique helps capture the data efficiently.
-
-![](img/basketball.png)
 
 ## Web Scraping Using R
 
-* Different web scraping techniques are required when we are facing different kinds of data.
+* Different web scraping techniques are required when we are facing different
+  kinds of data.
 
 * Data have been organized into files.
 
@@ -286,13 +271,16 @@ class: middle, center, inverse
   - Static data
   - Dynamic data
 
+---
+
 ## Import Data Files from Websites
 
 * These files that can be read by **read.csv** or related functions.
 
 * They can be directly imported from a URL.
 
-- Example: we extract the most recent Australian Open Tennis Championships match [(AUS Open)](http://www.tennis-data.co.uk/ausopen.php):
+- Example: we extract the most recent Australian Open Tennis Championships match
+  [(AUS Open)](http://www.tennis-data.co.uk/ausopen.php):
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE, results='hide', eval = FALSE}
 url <- "http://www.tennis-data.co.uk/2020/ausopen.csv"
@@ -302,22 +290,41 @@ str(tennis_aus)
 
 ---
 
-
----
-
 ## Web Scraping for Static Data in R
 
-R provides several approaches for web scraping the static data. Two of them will be discussed in this workshop.
+R provides several approaches for web scraping the static data. Two of them will
+be discussed in this workshop.
 
 * **readLines** function: Read the source code of the HTML pages.
 
-* **rvest** package: Capture useful data by identifying the elements contains the data in the source code. 
+* **rvest** package: Capture useful data by identifying the elements contains
+  the data in the source code.
+
+---
+
+## Example
+
+.pull-left[
+
+[College basketball school index](https://www.sports-reference.com/cbb/schools/)
+
+* These data can be obtained by copying and pasting manually.
+
+* Web scraping technique helps capture the data efficiently.
+]
+
+.pull-right[
+```{r img_4, out.width = "90%", fig.align = "center"}
+knitr::include_graphics("img/basketball.png")
+```
+]
 
 ---
 
 ## Web Scraping for Static Data in R
 
-Use **readLines** function for [College basketball school index](https://www.sports-reference.com/cbb/schools/). 
+Use **readLines** function for [College basketball school
+index](https://www.sports-reference.com/cbb/schools/).
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE, eval = FALSE}
 web_page <- readLines("https://www.sports-reference.com/cbb/schools/")
@@ -326,14 +333,15 @@ head(web_page, n = 10L)
 
 * Gives the source code.
 
-* Needs data cleaning and organization.
+* Needs data cleaning and organization using [regular
+  expressions](https://en.wikipedia.org/wiki/Regular_expression).
 
 ---
 
-
 ## Web Scraping for Static Data in R
 
-Before we talk about web scraping by **rvest** package, we need to know how to locate the elements containing the data in the source code.
+Before we talk about web scraping by **rvest** package, we need to know how to
+locate the elements containing the data in the source code.
 
 * Right click the page and choose "Inspect".
 
@@ -341,119 +349,364 @@ Before we talk about web scraping by **rvest** package, we need to know how to l
 
 * We can locate the elements by CSS selector or XPATH.
 
+* [SelectorGadget](https://rvest.tidyverse.org/articles/selectorgadget.html) is
+  a convenient tool to identify CSS selector.
+
 ---
 
 ## Web Scraping for Static Data in R
 
 Use http://tennisabstract.com/reports/atp_elo_ratings.html as an example
 
+.pull-left[
+
 * CSS selector: id = "reportable", class = "tablesorter"
 
-![](img/css.png)
+```{r img_6, out.width = "85%", fig.align = "center"}
+knitr::include_graphics("img/css.png")
+```
+]
 
----
-
-## Web Scraping for Static Data in R
+.pull-right[
 
 * XPATH: '//*[@id="reportable"]'
 
-![](img/xpath.png)
+```{r img_7, out.width = "85%", fig.align = "center"}
+knitr::include_graphics("img/xpath.png")
+```
+]
 
 ---
 
-## Web Scraping for Static Data in R
+class: middle, center, inverse
 
-Next, we are going to talk about how to use **rvest** for web scraping by using an example.
+# The `rvest` package
+
+---
+
+## `rvest`
+
+- An `R` package that is part of the `tidyverse` "collection" of packages
+
+- The package has only one system dependencie which is the `libxlm2` library. 
+
+- Provides basic functions that enable us to perform a considerable amount of
+  common web scraping tasks. For instance, extracting text and/or tables from
+  web pages.
+  
+- What you can do with web scraping will depend on your creativity and how the
+  data you want to extract is stored in the "target" website.
+  
+- Some websites are "protected" against web scraping in the sense that the
+  developers of these sites make everything in their power to make it difficult
+  to scrape their data. Some examples are betting platforms such as bet365, for
+  example.
+
+---
+
+## Basic functions
+
+- For most of the time we will be using only 5 functions from this package.
+
+- `read_html`: reads a web page and stores it into an `R` object of class
+  `"xml_document"`.
+
+- `html_element` and `html_elements`: these two functions will be the most
+  important ones for most of the examples we work with. Basically, we will use
+  these functions to select the "tags" we are interested in. 
+
+- `html_table` parses an `html` table into a `data.frame`
+
+- `html_text` and `html_text2` parses `html` text into character vectors.
+
+---
+
+## Good practices
+
+- Scrape responsabily and, more importantly, respect the data sources.
+
+- Don't try to use web scraping to emulate a "web crawler".
+
+- Collect only what you need.
+
+- Use an API if there is one available. 
+
+- Collect only once if possible.
+
+> From https://jakobtures.github.io/web-scraping/goodpractice.html .
+
+---
+
+class: middle, center, inverse
+
+# Examples
 
 
-* Install **rvest** package from cran.
+---
 
-\footnotesize
-```{r pckgs, eval=FALSE, echo=TRUE, eval = FALSE}
-install.packages("rvest", repos = "http://cran.us.r-project.org")
-require("rvest")
+## FIFA World Cup (Wikipedia)
+
+* Web scraping data from https://en.wikipedia.org/wiki/FIFA_World_Cup .
+
+```{r wiki, echo = TRUE, eval = TRUE, message = FALSE}
+library(dplyr)
+library(ggplot2)
+library(rvest)
+
+## website url
+url_wiki <- 'https://en.wikipedia.org/wiki/FIFA_World_Cup'
+## xpath for table
+xpt_wiki <- '/html/body/div[3]/div[3]/div[5]/div[1]/table[3]'
+
+## reading html
+page_wiki <- read_html(url_wiki)
 ```
 
 ---
 
-## Web Scraping for Static Data in R
+## FIFA World Cup (Wikipedia)
+
+.pull-left[
+```{r wiki2, echo = TRUE, eval = FALSE}
+## all the text from the webpage
+{{ page_wiki |> }}
+{{     html_elements("p") |> }}
+{{     html_text2() }}
+
+## all the tables from the page
+page_wiki |>
+    html_elements("table") |>
+    html_table()
+```
+]
+
+.pull-right[
+```{r wiki3, echo = FALSE, eval = TRUE}
+## text from the webpage
+page_wiki |> 
+    html_elements("p") |>
+    html_text2() -> yy
+yy[[1]]
+```
+]
+
+---
+
+## FIFA World Cup (Wikipedia)
+
+.pull-left[
+```{r wiki4, echo = TRUE, eval = FALSE}
+## all the text from the webpage
+page_wiki |>
+    html_elements("p") |>
+    html_text2()
+
+## all the tables from the page
+{{ page_wiki |> }}
+{{     html_elements("table") |> }}
+{{     html_table() }}
+```
+]
+
+.pull-right[
+```{r wiki5, echo = FALSE, eval = TRUE}
+## text from the webpage
+page_wiki |> 
+    html_elements("table") |>
+    html_table() -> xx
+
+xx[[1]]
+```
+]
+
+---
+
+## FIFA World Cup (Wikipedia)
+
+```{r wiki6, echo = TRUE, eval = TRUE}
+## selecting an specific table
+tbl_wiki <-
+    page_wiki |>
+    html_element(xpath = xpt_wiki) |>
+    html_table(dec = ",")
+
+## dealing with double header
+names(tbl_wiki) <- as.character(tbl_wiki[1, ])
+tbl_wiki <- tbl_wiki[-1, ]
+
+## removing "overall" row
+tbl_wiki <- tbl_wiki[-nrow(tbl_wiki), ]
+
+tbl_wiki <- janitor::clean_names(tbl_wiki)
+```
+
+---
+
+## FIFA World Cup (Wikipedia)
+
+```{r wiki_add, eval = TRUE, echo = TRUE}
+tbl_wiki <-
+    tbl_wiki |>
+    mutate_at(c(1, 4:6), ~ as.numeric(gsub(",", "", .))) |>
+    mutate(number = as.numeric(substr(gsub(",", "", number), 1, 6)))
+```
+
+---
+
+## FIFA World Cup (Wikipedia)
+
+```{r wiki7, echo = TRUE, eval = FALSE}
+ggplot(data = tbl_wiki,
+       aes(x = year, y = avg_attendance)) +
+    geom_line(lwd = 1.1) +
+    geom_label(aes(label = hosts)) +
+    theme_bw()
+```
+
+---
+
+## FIFA World Cup (Wikipedia)
+
+```{r wiki9, echo = TRUE, eval = FALSE}
+ggplot(data = tbl_wiki,
+       aes(x = year, y = number)) +
+    geom_line(lwd = 1.1) +
+    ## geom_label(aes(label = gsub(",", "\n",venue))) +
+    geom_label(aes(label = hosts)) +
+    theme_bw()
+```
+
+---
+
+class: middle
+
+## Exercise: Use `rvest` to load the table containing the top goal scorers in the Wikipedia page from the previous example.
+
+---
+
+## ATP tour Elo ratings
 
 * Web scraping data from http://tennisabstract.com/reports/atp_elo_ratings.html
-
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE, eval = FALSE}
 url_elo <- "http://tennisabstract.com/reports/atp_elo_ratings.html"
 webpage <- read_html(url_elo)
-elo_class <- webpage %>% 
-  html_nodes(".tablesorter") %>% 
-  html_table()
-elo_id <- webpage %>% 
-  html_nodes("#reportable") %>% 
-  html_table()
-identical(elo_class, elo_id)
+
+{{ webpage }}
 ```
 
 ---
 
-## Web Scraping for Static Data in R
 
+```{r echo=FALSE, message=FALSE, warning=FALSE, eval = TRUE}
+url_elo <- "http://tennisabstract.com/reports/atp_elo_ratings.html"
+webpage <- read_html(url_elo)
+
+webpage 
+```
+
+
+---
+
+## ATP tour Elo ratings
+
+* Web scraping data from http://tennisabstract.com/reports/atp_elo_ratings.html
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE, eval = FALSE}
-elo_xpath <- webpage %>% 
-  html_nodes(xpath = '//*[@id="reportable"]') %>% 
+url_elo <- "http://tennisabstract.com/reports/atp_elo_ratings.html"
+webpage <- read_html(url_elo)
+
+webpage
+
+elo_class <- webpage |>
+  html_element(".tablesorter") |>
   html_table()
-identical(elo_class, elo_xpath)
-head(elo_class[[1]])
+
+{{ elo_class }}
 ```
 
 ---
 
-## Web Scraping for Static Data in R
+```{r echo=FALSE, message=FALSE, warning=FALSE, eval = TRUE}
+elo_class <- webpage |>
+  html_element(".tablesorter") |>
+  html_table()
 
-* Except **html_nodes** and **html_table**, there are many other frequently used functions in **rvest**.
+head(elo_class)
+```
 
-  - **html_node** : extract element
-  - **html_text** : extract text
-  - **html_attrs** : extract attributes
-  - **html_form** : extract forms
+---
 
-* Please look up [rvest cran](https://cran.r-project.org/web/packages/rvest/rvest.pdf) for more information.
+## ATP tour Elo ratings
 
-* [SelectorGadget](https://cran.r-project.org/web/packages/rvest/vignettes/selectorgadget.html) is a convenient tool to identify CSS selector.
+* Web scraping data from http://tennisabstract.com/reports/atp_elo_ratings.html
+
+```{r echo=TRUE, message=FALSE, warning=FALSE, eval = FALSE}
+url_elo <- "http://tennisabstract.com/reports/atp_elo_ratings.html"
+webpage <- read_html(url_elo)
+
+webpage
+
+elo_class <- webpage |>
+  html_element(".tablesorter") |>
+  html_table()
+
+elo_id <- webpage |>
+  html_element("#reportable") |>
+  html_table()
+
+{{ elo_id }}
+```
+
+---
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, eval = TRUE}
+elo_id <- webpage |>
+  html_element("#reportable") |>
+  html_table()
+
+head(elo_id)
+```
 
 ---
 
 ## Web Scraping for Dynamic Data in R
 
-* What dynamic data display in the website can be changed in response to the user interaction. 
+* What dynamic data display in the website can be changed in response to the
+  user interaction.
 
 * We need to automate the web browsing process in R for the dynamic data.
 
-* **RSelenium** package helps this automating process by providing connection to Selenium Server.
+* The **httr** r package might be helpful to deal with these more complex cases
+  too.
+
+* **RSelenium** package helps this automating process by providing connection to
+  Selenium Server.
 
 * Install **RSelenium** package.
 
-\footnotesize
 ```{r eval=FALSE, message=FALSE, warning=FALSE, echo = TRUE}
-devtools::install_github("ropensci/RSelenium")
-require("RSelenium")
+install.packages("RSelenium")
+library("RSelenium")
 ```
 
-\normalsize
+---
+
+## Web Scraping for Dynamic Data in R
+
+* Use **RSelenium** to extract data on [2017 Australian Open
+  Final](http://www.flashscore.com/match/Cj6I5iL9/#match-statistics;0)
+
+```{r img_87, out.width = "85%", fig.align = "center"}
+knitr::include_graphics("img/flashscore.png")
+```
 
 ---
 
 ## Web Scraping for Dynamic Data in R
 
-* Use **RSelenium** to extract data on [2017 Australian Open Final](http://www.flashscore.com/match/Cj6I5iL9/#match-statistics;0)
-
-![](img/flashscore.png)
-
----
-
-## Web Scraping for Dynamic Data in R
-
-* Connect to a selenium server and open brower.
+* Connect to a selenium server and open brower. (This varies according to your
+  operational system)
 
 ```{r eval=FALSE, message=FALSE, warning=FALSE, echo = TRUE}
 rD <- rsDriver(port = 5561L, chromever = "85.0.4183.87")
@@ -471,7 +724,6 @@ webElem <- unlist(lapply(webElem, function(x){x$getElementText()}))[[1]]
 remDr$close()
 ```
 ![](img/rselres.png)
-\normalsize
 
 ---
 
@@ -485,7 +737,9 @@ remDr$close()
   - getPageSource() : get current page source
   - clickElement() : click element
   
-* Please go to [RSelenium cran](https://cran.r-project.org/web/packages/RSelenium/RSelenium.pdf) for more details.
+* Please go to [RSelenium
+  cran](https://cran.r-project.org/web/packages/RSelenium/RSelenium.pdf) for
+  more details.
 
 ---
 
@@ -504,12 +758,12 @@ remDr <- rD$client
 url <- "https://www.flashscore.com/team/connecticut-huskies/8rqVf3Tj/results/#"
 remDr$navigate(url)
 ```
-\normalsize
 
 ---
 
 ## Web Scraping for Dynamic Data in R
 
+.pull-left[
 * Automate to click all "show more results".
 
 ```{r eval=FALSE, message=FALSE, warning=FALSE, echo = TRUE}
@@ -524,7 +778,11 @@ repeat{
   if(inherits(b, "error")) break
 }
 ```
+]
 
+--
+
+.pull-right[
 * Extract data, such as time, home/away, score and result.
 
 ```{r eval=FALSE, message=FALSE, warning=FALSE, echo = TRUE}
@@ -534,6 +792,7 @@ webElemTime <-
   unlist(lapply(webElemTime, function(x){x$getElementText()}))
 webElemTime <- gsub("\\n", " ", webElemTime)
 ```
+]
 
 ---
 
@@ -580,9 +839,11 @@ remDr$close()
 
 ## Summary
 
-* For different kinds of data, we need to use different web scraping techiniques with R.
+* For different kinds of data, we need to use different web scraping techiniques
+  with R.
 
-* One can simply use **read.csv** or related functions to directly import organized files from web pages.
+* One can simply use **read.csv** or related functions to directly import
+  organized files from web pages.
 
 * The static data can be extract with the help of **rvest**.
 
@@ -598,7 +859,8 @@ remDr$close()
 
 - [RSelenium](https://cran.r-project.org/web/packages/RSelenium/vignettes/basics.html)
 
-- [R task view: web technology](https://cran.r-project.org/web/views/WebTechnologies.html)
+- [R task view: web
+  technology](https://cran.r-project.org/web/views/WebTechnologies.html)
 
 
 ---
@@ -611,3 +873,16 @@ slides](https://github.com/wanwanx/WebScraping_UCSAS), [Yaqiong Yao's
 slides](https://github.com/yay17007/UCSAS_WebScrapping).
 
 ---
+
+class:: middle, center, inverse
+
+# Get in touch!
+
+## `r fontawesome::fa("globe")` [lcgodoy.me](lcgodoy.me)
+
+## `r fontawesome::fa("twitter")` [ldcgodoy](https://twitter.com/ldcgodoy)
+
+## `r fontawesome::fa("github")` [lcgodoy](https://github.com/lcgodoy)
+
+## `r fontawesome::fa("envelope")` lucasdac.godoy@gmail.com
+
