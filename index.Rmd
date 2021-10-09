@@ -1024,7 +1024,8 @@ knitr::include_graphics("img/uconn.png")
 This slides are modified from [Dr. Kovalchik's
 material](https://github.com/skoval/UseRSportTutorial), [Wanwan Xu's
 slides](https://github.com/wanwanx/WebScraping_UCSAS), [Yaqiong Yao's
-slides](https://github.com/yay17007/UCSAS_WebScrapping).
+slides](https://github.com/yay17007/UCSAS_WebScrapping), and [Jakob Tures's
+book](https://jakobtures.github.io/web-scraping/index.html)
 
 ---
 
