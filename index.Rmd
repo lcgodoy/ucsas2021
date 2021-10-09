@@ -8,7 +8,7 @@ output:
     lib_dir: libs
     # css: ["style/shinobi.css", "ninjutsu", "style/ninpo.css"]
     css: xaringan-themer.css
-    self_contained: false
+    self_contained: true
     nature:
       ratio: "16:9"
       highlightStyle: monokai-sublime
@@ -21,7 +21,7 @@ output:
 options(htmltools.dir.version = FALSE)
 knitr::opts_chunk$set(echo = FALSE, eval = TRUE,
                       warning = FALSE, message = FALSE,
-                      dev = 'png')
+                      dev = 'png', dpi = 300)
 ```
 
 ```{r xaringan-themer, include=FALSE, warning=FALSE}
@@ -31,10 +31,10 @@ style_duo_accent(
     secondary_color = "#7C878E",
     header_color    = "#000E2F",
     text_color      = "#000E2F",
-    base_font_size  = "25px",
+    base_font_size  = "23px",
     ## code_inline_color = colorspace::lighten(gray),
     ## text_bold_color = colorspace::lighten(gray),
-    link_color = "",
+    link_color = "#7C878E",
     header_font_google = google_font("Proxima Nova"),
     text_font_google   = google_font("Helvetica"),
     code_font_google   = google_font("Fira Mono")
@@ -745,7 +745,7 @@ head(cg_2009)
   it to the url stored in the `url_cf` object.
   
 ```{r example_cf, echo = TRUE, eval = FALSE}
-url_cf2  <- "http://www.cfbstats.com/{{2010}}/leader/national/team/offense/split01/category09/sort01.html"
+url_cf2  <- "http://www.cfbstats.com/2010/leader/national/team/offense/split01/category09/sort01.html"
 ```
 
 ---
