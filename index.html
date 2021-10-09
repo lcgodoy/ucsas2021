@@ -24,7 +24,6 @@ class: center, middle, inverse, title-slide
 
 
 
-
 ## Outline
 
 * Intro
@@ -456,7 +455,12 @@ page_wiki |&gt;
 .pull-right[
 
 ```
-## [1] ""
+## [1] ""                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+## [2] ""                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+## [3] "The FIFA World Cup, often simply called the World Cup, is an international association football competition contested by the senior men's national teams of the members of the Fédération Internationale de Football Association (FIFA), the sport's global governing body. The championship has been awarded every four years since the inaugural tournament in 1930, except in 1942 and 1946 when it was not held because of the Second World War. The current champion is France, which won its second title at the 2018 tournament in Russia."
+## [4] "The current format involves a qualification phase, which takes place over the preceding three years, to determine which teams qualify for the tournament phase. In the tournament phase, 32 teams, including the automatically qualifying host nation(s), compete for the title at venues within the host nation(s) over about a month."                                                                                                                                                                                                          
+## [5] "The 21 World Cup tournaments have been won by eight national teams. Brazil have won five times, and they are the only team to have played in every tournament. The other World Cup winners are Germany and Italy, with four titles each; Argentina, France, and inaugural winner Uruguay, with two titles each; and England and Spain, with one title each."                                                                                                                                                                                      
+## [6] "The World Cup is the most prestigious association football tournament in the world, as well as the most widely viewed and followed single sporting event in the world. The cumulative viewership of all matches of the 2006 World Cup was estimated to be 26.29 billion with an estimated 715.1 million people watching the final match, a ninth of the entire population of the planet.[1][2][3][4]"
 ```
 ]
 
@@ -535,6 +539,7 @@ tbl_wiki &lt;-
 
 ## FIFA World Cup (Wikipedia)
 
+.pull-left[
 
 ```r
 ggplot(data = tbl_wiki,
@@ -543,11 +548,18 @@ ggplot(data = tbl_wiki,
     geom_label(aes(label = hosts)) +
     theme_bw()
 ```
+]
+
+.pull-right[
+&lt;img src="index_files/figure-html/wiki8-1.png" width="85%" /&gt;
+]
 
 ---
 
 ## FIFA World Cup (Wikipedia)
 
+
+.pull-left[
 
 ```r
 ggplot(data = tbl_wiki,
@@ -557,6 +569,11 @@ ggplot(data = tbl_wiki,
     geom_label(aes(label = hosts)) +
     theme_bw()
 ```
+]
+
+.pull-right[
+&lt;img src="index_files/figure-html/wiki10-1.png" width="85%" /&gt;
+]
 
 ---
 
@@ -594,7 +611,6 @@ webpage &lt;- read_html(url_elo)
 ## [7] &lt;script type="text/javascript" src="http://www.minorleaguesplits.com/tenn ...
 ## [8] &lt;script language="JavaScript"&gt;\r\n    $('#playersearch').append($('&lt;input ...
 ```
-
 
 ---
 
@@ -676,6 +692,107 @@ elo_id &lt;- webpage |&gt;
 
 ---
 
+## College Football
+
+* Web scraping data from http://www.cfbstats.com/2009/leader/national/team/offense/split01/category09/sort01.html .
+
+.pull-left[
+
+```r
+url_cf  &lt;- "http://www.cfbstats.com/2009/leader/national/team/offense/split01/category09/sort01.html"
+page_cf &lt;- read_html(url_cf)
+
+cg_2009 &lt;-
+    page_cf |&gt;
+    html_element("table") |&gt;
+    html_table() |&gt;
+    janitor::clean_names() |&gt;
+    rename("rank" = "x")
+
+* head(cg_2009) 
+```
+]
+
+.pull-right[
+
+```
+## # A tibble: 6 × 10
+##    rank name            g    td    fg  x1xp  x2xp safety points points_g
+##   &lt;int&gt; &lt;chr&gt;       &lt;int&gt; &lt;int&gt; &lt;int&gt; &lt;int&gt; &lt;int&gt;  &lt;int&gt;  &lt;int&gt;    &lt;dbl&gt;
+## 1     1 Houston        14    77    20    65     2      0    591     42.2
+## 2     1 Boise State    14    76    19    66     5      1    591     42.2
+## 3     3 Texas          14    68    24    66     1      1    550     39.3
+## 4     4 Cincinnati     13    66    13    63     1      1    502     38.6
+## 5     5 TCU            13    65    15    61     0      1    498     38.3
+## 6     6 Nevada         13    69     6    61     2      0    497     38.2
+```
+]
+
+---
+
+## College Football
+
+* Sometimes, the URL of the website we are scraping follow some patterns. For
+  example, for this example we can see the year as a parameter in the URL, that
+  is
+  _http://www.cfbstats.com/**2009**/leader/national/team/offense/split01/category09/sort01.html_
+  
+* In this case, specifically, we can just change the year in the url to scrape
+  data from a different year. Take a look at the chunk of code below and compare
+  it to the url stored in the `url_cf` object.
+  
+
+```r
+url_cf2  &lt;- "http://www.cfbstats.com/{{2010}}/leader/national/team/offense/split01/category09/sort01.html"
+```
+
+---
+
+class: middle
+
+## Exercise: Use what we have learned so far to scrape the stats for every year between 2009 and 2020 in the  College Fooball example
+
+---
+
+## Solution
+
+
+```r
+urls_aux &lt;- "http://www.cfbstats.com/%d/leader/national/team/offense/split01/category09/sort01.html"
+
+tables_cf &lt;- lapply(2009:2020,
+                    function(x, .url) {
+                        url &lt;- sprintf(.url, x)
+                        
+                        out &lt;- read_html(url) |&gt;
+                            html_element("table") |&gt;
+                            html_table() |&gt;
+                            janitor::clean_names() |&gt;
+                            rename("rank" = "x") |&gt;
+                            mutate(year = x) |&gt;
+                            select(rank, year, name, everything())
+
+                        return(out)
+                    }, .url = urls_aux)
+
+final_table &lt;- bind_rows(tables_cf)
+```
+
+---
+
+## Solution
+
+&lt;img src="index_files/figure-html/plot_solution-1.png" style="display: block; margin: auto;" /&gt;
+
+---
+
+class: middle
+
+## Exercise: web scrape the tables from this url https://www.baseball-almanac.com/teamstats/schedule.php?y=2014&amp;t=BOS for different years. 
+
+---
+
+
 ## Web Scraping for Dynamic Data in R
 
 * What dynamic data display in the website can be changed in response to the
@@ -683,11 +800,13 @@ elo_id &lt;- webpage |&gt;
 
 * We need to automate the web browsing process in R for the dynamic data.
 
-* The **httr** r package might be helpful to deal with these more complex cases
-  too.
-
 * **RSelenium** package helps this automating process by providing connection to
   Selenium Server.
+
+* This package requires us to set up a local server, this process varies with
+  the OS you're using. The authors right now recommend using docker to do
+  so. For more information see [this
+  link](https://docs.ropensci.org/RSelenium/articles/docker.html)
 
 * Install **RSelenium** package.
 
@@ -710,6 +829,7 @@ library("RSelenium")
 
 ## Web Scraping for Dynamic Data in R
 
+.pull-left[
 * Connect to a selenium server and open brower. (This varies according to your
   operational system)
 
@@ -730,7 +850,11 @@ webElem &lt;- unlist(lapply(webElem, function(x){x$getElementText()}))[[1]]
 # head(unlist(strsplit(webElem, split = '\n')))
 remDr$close()
 ```
-![](img/rselres.png)
+]
+
+.pull-right[
+&lt;img src="img/rselres.png" width="85%" style="display: block; margin: auto;" /&gt;
+]
 
 ---
 
@@ -829,7 +953,9 @@ webElemResult &lt;-
 
 ## Web Scraping for Dynamic Data in R
 
-* Organize dataset.
+.pull-left[
+
+* Organizing dataset.
 
 
 ```r
@@ -844,8 +970,11 @@ basketball &lt;-
 head(basketball)
 remDr$close()
 ```
+]
 
-![](img/uconn.png)
+.pull-right[
+&lt;img src="img/uconn.png" width="85%" style="display: block; margin: auto;" /&gt;
+]
 
 ---
 

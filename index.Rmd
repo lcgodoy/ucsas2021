@@ -21,7 +21,7 @@ output:
 options(htmltools.dir.version = FALSE)
 knitr::opts_chunk$set(echo = FALSE, eval = TRUE,
                       warning = FALSE, message = FALSE,
-                      dev = 'svg')
+                      dev = 'png')
 ```
 
 ```{r xaringan-themer, include=FALSE, warning=FALSE}
@@ -47,7 +47,6 @@ library(rvest)
 library(dplyr)
 library(ggplot2)
 ```
-
 
 ## Outline
 
@@ -486,7 +485,7 @@ page_wiki |>
 page_wiki |> 
     html_elements("p") |>
     html_text2() -> yy
-yy[[1]]
+head(yy)
 ```
 ]
 
@@ -495,7 +494,7 @@ yy[[1]]
 ## FIFA World Cup (Wikipedia)
 
 .pull-left[
-```{r wiki4, echo = TRUE, eval = FALSE}
+```{r wiki4, echo = TRUE, eval = FALSE, class.output = "bg-danger"}
 ## all the text from the webpage
 page_wiki |>
     html_elements("p") |>
@@ -555,6 +554,7 @@ tbl_wiki <-
 
 ## FIFA World Cup (Wikipedia)
 
+.pull-left[
 ```{r wiki7, echo = TRUE, eval = FALSE}
 ggplot(data = tbl_wiki,
        aes(x = year, y = avg_attendance)) +
@@ -562,11 +562,24 @@ ggplot(data = tbl_wiki,
     geom_label(aes(label = hosts)) +
     theme_bw()
 ```
+]
+
+.pull-right[
+```{r wiki8, echo = FALSE, eval = TRUE, out.width = "85%"}
+ggplot(data = tbl_wiki,
+       aes(x = year, y = avg_attendance)) +
+    geom_line(lwd = 1.1) +
+    geom_label(aes(label = hosts)) +
+    theme_bw()
+```
+]
 
 ---
 
 ## FIFA World Cup (Wikipedia)
 
+
+.pull-left[
 ```{r wiki9, echo = TRUE, eval = FALSE}
 ggplot(data = tbl_wiki,
        aes(x = year, y = number)) +
@@ -575,6 +588,19 @@ ggplot(data = tbl_wiki,
     geom_label(aes(label = hosts)) +
     theme_bw()
 ```
+]
+
+.pull-right[
+```{r wiki10, echo = FALSE, eval = TRUE, out.width = "85%"}
+ggplot(data = tbl_wiki,
+       aes(x = year, y = number)) +
+    geom_line(lwd = 1.1) +
+    ## geom_label(aes(label = gsub(",", "\n",venue))) +
+    geom_label(aes(label = hosts)) +
+    theme_bw()
+
+```
+]
 
 ---
 
@@ -604,7 +630,6 @@ webpage <- read_html(url_elo)
 
 webpage 
 ```
-
 
 ---
 
@@ -670,6 +695,116 @@ head(elo_id)
 
 ---
 
+## College Football
+
+* Web scraping data from http://www.cfbstats.com/2009/leader/national/team/offense/split01/category09/sort01.html .
+
+.pull-left[
+```{r cf1, echo = TRUE, eval = FALSE}
+url_cf  <- "http://www.cfbstats.com/2009/leader/national/team/offense/split01/category09/sort01.html"
+page_cf <- read_html(url_cf)
+
+cg_2009 <-
+    page_cf |>
+    html_element("table") |>
+    html_table() |>
+    janitor::clean_names() |>
+    rename("rank" = "x")
+
+{{ head(cg_2009) }}
+```
+]
+
+.pull-right[
+```{r cf2, echo = FALSE, eval = TRUE}
+url_cf  <- "http://www.cfbstats.com/2009/leader/national/team/offense/split01/category09/sort01.html"
+page_cf <- read_html(url_cf)
+
+cg_2009 <-
+    page_cf |>
+    html_element("table") |>
+    html_table() |>
+    janitor::clean_names() |>
+    rename("rank" = "x")
+
+head(cg_2009)
+```
+]
+
+---
+
+## College Football
+
+* Sometimes, the URL of the website we are scraping follow some patterns. For
+  example, for this example we can see the year as a parameter in the URL, that
+  is
+  _http://www.cfbstats.com/**2009**/leader/national/team/offense/split01/category09/sort01.html_
+  
+* In this case, specifically, we can just change the year in the url to scrape
+  data from a different year. Take a look at the chunk of code below and compare
+  it to the url stored in the `url_cf` object.
+  
+```{r example_cf, echo = TRUE, eval = FALSE}
+url_cf2  <- "http://www.cfbstats.com/{{2010}}/leader/national/team/offense/split01/category09/sort01.html"
+```
+
+---
+
+class: middle
+
+## Exercise: Use what we have learned so far to scrape the stats for every year between 2009 and 2020 in the  College Fooball example
+
+---
+
+## Solution
+
+```{r my_solution, echo = TRUE, eval = TRUE}
+urls_aux <- "http://www.cfbstats.com/%d/leader/national/team/offense/split01/category09/sort01.html"
+
+tables_cf <- lapply(2009:2020,
+                    function(x, .url) {
+                        url <- sprintf(.url, x)
+                        
+                        out <- read_html(url) |>
+                            html_element("table") |>
+                            html_table() |>
+                            janitor::clean_names() |>
+                            rename("rank" = "x") |>
+                            mutate(year = x) |>
+                            select(rank, year, name, everything())
+
+                        return(out)
+                    }, .url = urls_aux)
+
+final_table <- bind_rows(tables_cf)
+```
+
+---
+
+## Solution
+
+```{r plot_solution, echo = FALSE, eval = TRUE, fig.align = "center"}
+uconn_years <- final_table |>
+    filter(name == "Connecticut")
+
+ggplot(data = uconn_years,
+       aes(x = year, y = rank)) +
+    geom_point() +
+    geom_line() +
+    scale_y_reverse(limits = c(130, 0), breaks = c(130, 100, 50, 10, 1)) +
+    scale_x_continuous(breaks = c(2009, 2015, 2020)) +
+    theme_bw()
+```
+
+---
+
+class: middle
+
+## Exercise: web scrape the tables from this url https://www.baseball-almanac.com/teamstats/schedule.php?y=2014&t=BOS for different years. 
+
+---
+
+
 ## Web Scraping for Dynamic Data in R
 
 * What dynamic data display in the website can be changed in response to the
@@ -677,11 +812,13 @@ head(elo_id)
 
 * We need to automate the web browsing process in R for the dynamic data.
 
-* The **httr** r package might be helpful to deal with these more complex cases
-  too.
-
 * **RSelenium** package helps this automating process by providing connection to
   Selenium Server.
+
+* This package requires us to set up a local server, this process varies with
+  the OS you're using. The authors right now recommend using docker to do
+  so. For more information see [this
+  link](https://docs.ropensci.org/RSelenium/articles/docker.html)
 
 * Install **RSelenium** package.
 
@@ -705,6 +842,7 @@ knitr::include_graphics("img/flashscore.png")
 
 ## Web Scraping for Dynamic Data in R
 
+.pull-left[
 * Connect to a selenium server and open brower. (This varies according to your
   operational system)
 
@@ -723,7 +861,13 @@ webElem <- unlist(lapply(webElem, function(x){x$getElementText()}))[[1]]
 # head(unlist(strsplit(webElem, split = '\n')))
 remDr$close()
 ```
-![](img/rselres.png)
+]
+
+.pull-right[
+```{r img_88, out.width = "85%", fig.align = "center"}
+knitr::include_graphics("img/rselres.png")
+```
+]
 
 ---
 
@@ -818,7 +962,9 @@ webElemResult <-
 
 ## Web Scraping for Dynamic Data in R
 
-* Organize dataset.
+.pull-left[
+
+* Organizing dataset.
 
 ```{r eval=FALSE, message=FALSE, warning=FALSE, echo = TRUE}
 n <- length(webElemHome)
@@ -832,8 +978,13 @@ basketball <-
 head(basketball)
 remDr$close()
 ```
+]
 
-![](img/uconn.png)
+.pull-right[
+```{r img_89, out.width = "85%", fig.align = "center"}
+knitr::include_graphics("img/uconn.png")
+```
+]
 
 ---
 
