@@ -34,7 +34,7 @@ style_duo_accent(
     base_font_size  = "23px",
     ## code_inline_color = colorspace::lighten(gray),
     ## text_bold_color = colorspace::lighten(gray),
-    link_color = "#7C878E",
+    link_color = "#E4002B",
     header_font_google = google_font("Proxima Nova"),
     text_font_google   = google_font("Helvetica"),
     code_font_google   = google_font("Fira Mono")
@@ -560,7 +560,8 @@ ggplot(data = tbl_wiki,
        aes(x = year, y = avg_attendance)) +
     geom_line(lwd = 1.1) +
     geom_label(aes(label = hosts)) +
-    theme_bw()
+    theme_bw() +
+    labs(x = "Year", y = "Avg. attendance")
 ```
 ]
 
@@ -570,7 +571,8 @@ ggplot(data = tbl_wiki,
        aes(x = year, y = avg_attendance)) +
     geom_line(lwd = 1.1) +
     geom_label(aes(label = hosts)) +
-    theme_bw()
+    theme_bw() +
+    labs(x = "Year", y = "Avg. attendance")
 ```
 ]
 
@@ -586,7 +588,8 @@ ggplot(data = tbl_wiki,
     geom_line(lwd = 1.1) +
     ## geom_label(aes(label = gsub(",", "\n",venue))) +
     geom_label(aes(label = hosts)) +
-    theme_bw()
+    theme_bw() +
+    labs(x = "Year", y = "Max. attendance")
 ```
 ]
 
@@ -597,7 +600,8 @@ ggplot(data = tbl_wiki,
     geom_line(lwd = 1.1) +
     ## geom_label(aes(label = gsub(",", "\n",venue))) +
     geom_label(aes(label = hosts)) +
-    theme_bw()
+    theme_bw() +
+    labs(x = "Year", y = "Max. attendance")
 
 ```
 ]
@@ -781,9 +785,7 @@ final_table <- bind_rows(tables_cf)
 
 ---
 
-## Solution
-
-```{r plot_solution, echo = FALSE, eval = TRUE, fig.align = "center"}
+```{r plot_solution, echo = FALSE, eval = TRUE, fig.align = "center", fig.height = 4, fig.width = 8}
 uconn_years <- final_table |>
     filter(name == "Connecticut")
 
@@ -793,7 +795,8 @@ ggplot(data = uconn_years,
     geom_line() +
     scale_y_reverse(limits = c(130, 0), breaks = c(130, 100, 50, 10, 1)) +
     scale_x_continuous(breaks = c(2009, 2015, 2020)) +
-    theme_bw()
+    theme_bw() +
+    labs(x = "Year", y = "Rank", title = "UConn")
 ```
 
 ---
